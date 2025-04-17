@@ -5,18 +5,21 @@ import random
 # Import modular components
 from models.llm_client import LLMClient
 from templates.prompts import PromptTemplates
+from templates.consent_prompts import ConsentPrompts
 from utils.validators import validate_input
 from utils.tech_parser import parse_tech_stack
 from interview.state_manager import InterviewStateManager
 from interview.question_generator import QuestionGenerator
+from database.models import DatabaseManager
 
 
 class ChatbotController:
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, db_path: str = "sqlite:///interviews.db"):
         """Initialize the ChatbotController with Gemini API.
         
         Args:
             api_key: Google API key for Gemini access
+            db_path: Database connection string
         """
         # Company and interviewer information
         self.company_name = "PGAGI"
@@ -25,8 +28,16 @@ class ChatbotController:
         # Initialize components
         self.llm_client = LLMClient(api_key=api_key, model_name="gemini-1.5-flash")
         self.prompt_templates = PromptTemplates(self.company_name, self.interviewer_name)
+        self.consent_prompts = ConsentPrompts(self.company_name)
         self.state_manager = InterviewStateManager()
         self.question_generator = QuestionGenerator(self.llm_client, self.prompt_templates)
+        self.db_manager = DatabaseManager(db_path)
+        
+        # GDPR consent state
+        self.candidate_id = None
+        self.consent_requested = False
+        self.consent_given = False
+        self.gdpr_intro_shown = False
         
         # Initialize interview state
         self.reset_chat()
@@ -37,16 +48,19 @@ class ChatbotController:
         Returns:
             Initial prompt message
         """
-        response = self.llm_client.generate_response(
-            self.prompt_templates.PROMPT_TEMPLATES["greeting"],
-            context={}
-        )
+        # Set GDPR intro flag to show we're starting a new chat
+        self.gdpr_intro_shown = True
         
-        if response and len(response.strip()) > 0:
-            return response
+        # Start with the GDPR consent request first, then provide greeting
+        gdpr_first_greeting = f"""Hi there! I'm {self.interviewer_name}, an AI technical interviewer for {self.company_name}.
+
+I'll be conducting a technical interview to assess your qualifications for a developer role with our company. Before we begin, I need to inform you about our data storage policy:
+
+{self.company_name} would like to store your interview data for evaluation and potential future hiring decisions.
+
+{self.consent_prompts.CONSENT_REQUEST}"""
         
-        # Fallback to hardcoded prompt
-        return self.prompt_templates.INITIAL_CHAT_PROMPT
+        return gdpr_first_greeting
     
     def process_user_input(self, user_input: str) -> str:
         """Process user input based on the current interview state.
@@ -59,6 +73,16 @@ class ChatbotController:
         """
         if not user_input.strip():
             return "I didn't receive your response. Could you please provide an answer to the question?"
+        
+        # Process GDPR consent right at the beginning
+        if self.gdpr_intro_shown and not self.consent_requested:
+            self.consent_requested = True
+            consent_response = self._process_consent_response(user_input)
+            if consent_response:
+                return consent_response
+            
+            # If we couldn't get a clear response, ask again
+            return "Please respond with 'yes' or 'no' to indicate whether you consent to storing your interview data."
         
         # Check for input validation first
         current_step = self.state_manager.get_current_step()
@@ -93,6 +117,32 @@ class ChatbotController:
         self.llm_client.add_to_history(user_input, next_response)
         
         return next_response
+    
+    def _process_consent_response(self, user_input: str) -> Optional[str]:
+        """Process GDPR consent response.
+        
+        Args:
+            user_input: User's consent response
+            
+        Returns:
+            Response message or None if not a consent response
+        """
+        # Check for affirmative consent
+        if user_input.lower() in ['yes', 'y', 'sure', 'okay', 'ok', 'agree', 'consent', 'i consent']:
+            self.consent_given = True
+            
+            # Continue with the interview
+            self.llm_client.add_to_history(user_input, self.consent_prompts.CONSENT_GIVEN)
+            return self.consent_prompts.CONSENT_GIVEN
+            
+        # Handle consent refusal
+        elif user_input.lower() in ['no', 'n', 'nope', 'disagree', 'do not consent', 'i do not consent']:
+            # Mark consent declined, but continue interview
+            self.llm_client.add_to_history(user_input, self.consent_prompts.CONSENT_DECLINED)
+            return self.consent_prompts.CONSENT_DECLINED
+        
+        # Not a clear consent response
+        return None
     
     def _store_user_response(self, user_input: str) -> None:
         """Store user's response based on current interview step.
@@ -135,6 +185,10 @@ class ChatbotController:
                     # Set up for first technical question
                     self.state_manager.update_current_step("technical_questions")
                     self.state_manager.set_current_tech(tech_stack[0])
+                    
+                    # Create candidate record in database if consent was given
+                    if self.consent_given:
+                        self._create_candidate_record()
         
         # Technical questions phase
         elif current_step == "technical_questions":
@@ -160,6 +214,33 @@ class ChatbotController:
                     # We've gone through all techs, conclude the interview
                     self.state_manager.update_current_step("complete")
                     self.state_manager.mark_interview_complete()
+                    
+                    # Store interview responses if consent was given
+                    if self.consent_given and self.candidate_id:
+                        self._store_interview_responses()
+    
+    def _create_candidate_record(self) -> None:
+        """Create a candidate record in the database."""
+        # Prepare candidate data
+        candidate_data = self.state_manager.get_candidate_info()
+        
+        # Create record with consent status
+        self.candidate_id = self.db_manager.create_candidate(candidate_data, consent_given=self.consent_given)
+    
+    def _store_interview_responses(self) -> None:
+        """Store interview responses in the database."""
+        if not self.candidate_id or not self.consent_given:
+            return
+            
+        # Prepare responses
+        responses = {}
+        for tech in self.state_manager.get_tech_stack():
+            qa_pairs = self.state_manager.get_asked_questions(tech)
+            if qa_pairs:
+                responses[tech] = qa_pairs
+        
+        # Store in database
+        self.db_manager.store_interview_responses(self.candidate_id, responses)
     
     def _get_next_response(self, user_input: str) -> str:
         """Get the next response based on current interview state and user input.
@@ -217,23 +298,26 @@ class ChatbotController:
             name = self.state_manager.get_first_name()
             technologies = ", ".join(self.state_manager.get_tech_stack())
             
-            context = {
-                "interviewer_name": self.interviewer_name,
-                "company_name": self.company_name,
-                "candidate_name": name,
-                "technologies": technologies
-            }
-            
-            response = self.llm_client.generate_response(
-                self.prompt_templates.PROMPT_TEMPLATES["conclusion"], 
-                context
-            )
-            
-            if response and len(response.strip()) > 0:
-                return response
+            # Add GDPR notice if consent was given
+            if self.consent_given:
+                conclusion_message = self.consent_prompts.END_OF_INTERVIEW_DATA_NOTICE
+            else:
+                context = {
+                    "interviewer_name": self.interviewer_name,
+                    "company_name": self.company_name,
+                    "candidate_name": name,
+                    "technologies": technologies
+                }
                 
-            # Fallback to template
-            return self.prompt_templates.CONCLUSION_MESSAGE
+                conclusion_message = self.llm_client.generate_response(
+                    self.prompt_templates.PROMPT_TEMPLATES["conclusion"], 
+                    context
+                )
+                
+                if not conclusion_message or len(conclusion_message.strip()) == 0:
+                    conclusion_message = self.prompt_templates.CONCLUSION_MESSAGE
+            
+            return conclusion_message
         
         # Fallback
         return "I'm not sure what to ask next. Let's restart the interview."
@@ -404,3 +488,9 @@ class ChatbotController:
         """Reset the chat session and interview state."""
         self.llm_client.reset_chat()
         self.state_manager.reset()
+        
+        # Reset GDPR state
+        self.candidate_id = None
+        self.consent_requested = False
+        self.consent_given = False
+        self.gdpr_intro_shown = False
