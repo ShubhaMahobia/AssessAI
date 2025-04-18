@@ -347,9 +347,9 @@ I'll be conducting a technical interview to assess your qualifications for a dev
         if not tech_questions or len(tech_questions) < 3:
             # If somehow we don't have questions, generate defaults
             tech_questions = [
-                f"Can you explain the core principles or concepts of {current_tech}?",
-                f"What are the main advantages and limitations of {current_tech} compared to alternatives?",
-                f"How would you describe the architecture or structure of a typical {current_tech} application?"
+                f"What are the main features or characteristics of {current_tech}?",
+                f"What are the advantages of using {current_tech} compared to alternatives?",
+                f"What is a common challenge when working with {current_tech}?"
             ]
         
         # First technical question for this tech (no acknowledgment needed)

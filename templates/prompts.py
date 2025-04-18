@@ -25,9 +25,14 @@ class PromptTemplates:
 
 2. Ask technical questions ONLY after collecting all basic information
 3. Ask exactly 3 questions for each technology they are proficient in
-4. Conclude with a thank you message
+4. Keep questions SIMPLE and DIRECT - only ask ONE thing per question
+5. Conclude with a thank you message
 
-CRITICAL: DO NOT DEVIATE from this exact question sequence. Ask only one question at a time and wait for a response before proceeding to the next question.
+CRITICAL: 
+- DO NOT DEVIATE from this exact question sequence
+- Ask only one question at a time and wait for a response before proceeding
+- Do not ask multi-part or complex questions
+- Keep questions short and focused
 """
 
         # Initial chat prompt
@@ -127,31 +132,33 @@ Keep your response brief and conversational.
 "{tech_stack}"
 
 You need to:
-1. Acknowledge their tech stack
-2. Explain you'll ask some theoretical questions about {current_tech} (mention that you're focusing on concepts, not coding)
+1. Briefly acknowledge their tech stack (1 sentence maximum)
+2. VERY BRIEFLY mention you'll ask theoretical questions about {current_tech}
 3. Ask this first question about {current_tech}: "{first_question}"
 
-Keep your response conversational and engaging.
+Keep your response very short, direct and focused on asking just ONE question.
+Do NOT provide long introductions or elaborate setups for your questions.
 """,
 
             "tech_question_generation": """You are a technical interviewer specialized in {technology}. 
 
 Generate 3 theoretical technical questions for a developer interview about {technology}. The questions should:
 1. Focus on concepts, theory, and understanding (NOT coding questions)
-2. Assess the candidate's knowledge of principles, architecture, and best practices
-3. Range from fundamental concepts to more advanced theoretical understanding
-4. Include questions about paradigms, design patterns, or architectural considerations where applicable
-5. Be clear and concise
+2. Be SHORT and FOCUSED - ask only ONE thing per question
+3. Be simple and direct - avoid complex, multi-part questions
+4. Range from fundamental to more advanced theoretical understanding
+5. Be clear and concise - 1-2 sentences maximum
 
-Examples of good theoretical questions:
-- "Can you explain the difference between OOP and functional programming paradigms?"
-- "What are the key principles of RESTful API design?"
-- "How does the MVC architecture pattern work?"
+Examples of good concise questions:
+- "What is the difference between a list and a tuple in Python?"
+- "How does React's virtual DOM work?"
+- "What are the ACID properties in database systems?"
 
-Avoid asking:
-- Coding challenges or algorithm implementations
+Avoid:
+- Multi-part questions that ask several things at once
+- Overly complex or lengthy questions
 - Questions that would require writing code
-- Syntax-specific questions
+- Questions with multiple sub-questions
 
 Format your response as a numbered list with just the questions.
 """,
@@ -163,10 +170,11 @@ The candidate was asked: "{previous_question}"
 They answered: "{previous_answer}"
 
 You need to:
-1. Acknowledge their answer with a thoughtful comment
-2. Ask this follow-up question: "{next_question}"
+1. Briefly acknowledge their answer with a single sentence
+2. Ask this question DIRECTLY: "{next_question}"
 
-Keep your response conversational and focused on this specific technology.
+Keep your response very brief and focused on asking just ONE question.
+Do NOT provide lengthy explanations, context, or follow-ups to the next question.
 """,
 
             "tech_transition_next": """You are {interviewer_name}, an AI technical interviewer for {company_name}.
@@ -174,11 +182,11 @@ Keep your response conversational and focused on this specific technology.
 You've just finished asking questions about {previous_tech}.
 
 You need to:
-1. Briefly acknowledge the candidate's responses about {previous_tech}
-2. Transition to ask theoretical questions about {next_tech}
-3. Ask this specific question about {next_tech}: "{first_question}"
+1. Briefly acknowledge their responses about {previous_tech} (1 sentence maximum)
+2. Simply state you'll now ask about {next_tech}
+3. Ask this specific question: "{first_question}"
 
-Keep your transition smooth and professional.
+Keep your transition to a single short sentence. Focus on asking just ONE question directly.
 """,
 
             "conclusion": """You are {interviewer_name}, an AI technical interviewer for {company_name} who has just completed an interview with {candidate_name}.

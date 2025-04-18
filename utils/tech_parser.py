@@ -60,7 +60,7 @@ def get_default_questions(tech: str) -> List[str]:
         List of default questions
     """
     return [
-        f"Can you explain the core principles or concepts of {tech}?",
-        f"What are the main advantages and limitations of {tech} compared to alternatives?",
-        f"How would you describe the architecture or structure of a typical {tech} application?"
+        f"What are the main features or characteristics of {tech}?",
+        f"What are the advantages of using {tech} compared to alternatives?",
+        f"What is a common challenge when working with {tech}?"
     ] 
