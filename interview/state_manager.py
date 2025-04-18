@@ -20,7 +20,8 @@ class InterviewStateManager:
             "asked_questions": {},
             "current_question": "",
             "tech_questions": {},
-            "interview_complete": False
+            "interview_complete": False,
+            "interview_finished": False  # When true, no more typing is allowed
         }
         
     def get_current_step(self) -> str:
@@ -193,10 +194,23 @@ class InterviewStateManager:
         """Mark the interview as complete."""
         self.state["interview_complete"] = True
         
+    def mark_interview_finished(self) -> None:
+        """Mark the interview as finished - no more typing allowed."""
+        self.state["interview_complete"] = True
+        self.state["interview_finished"] = True
+        
     def is_interview_complete(self) -> bool:
         """Check if the interview is complete.
         
         Returns:
             True if complete, False otherwise
         """
-        return self.state["interview_complete"] 
+        return self.state["interview_complete"]
+        
+    def is_interview_finished(self) -> bool:
+        """Check if the interview is completely finished and no more typing is allowed.
+        
+        Returns:
+            True if finished, False otherwise
+        """
+        return self.state["interview_finished"] 

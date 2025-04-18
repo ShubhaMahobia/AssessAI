@@ -22,6 +22,8 @@ We follow GDPR guidelines, meaning:
 4. We will not share your data with third parties without your consent
 
 Do you consent to {company_name} storing this information? Please reply with 'yes' or 'no'.
+
+Note: You can type "exit" at any time to end the interview.
 """
 
         # Consent confirmation
@@ -34,6 +36,7 @@ Let me now explain the interview process:
 - First, I'll collect some basic information about you
 - Then, I'll ask some theoretical technical questions (no coding required)
 - Feel free to ask clarifying questions at any point
+- You can type "exit" at any time to end the interview
 
 Now, let's begin. Could you please tell me your full name?
 """
@@ -46,6 +49,7 @@ Let me now explain the interview process:
 - First, I'll collect some basic information about you
 - Then, I'll ask some theoretical technical questions (no coding required)
 - Feel free to ask clarifying questions at any point
+- You can type "exit" at any time to end the interview
 - Since you declined data storage, your responses will not be saved after our conversation ends
 
 Now, let's begin. Could you please tell me your full name?
@@ -65,9 +69,9 @@ To exercise these rights, please contact privacy@{company_name.lower()}.com.
 """
 
         # End of interview data usage
-        self.END_OF_INTERVIEW_DATA_NOTICE = f"""This concludes our interview. As you've consented, {company_name} will store your interview responses for evaluation.
+        self.END_OF_INTERVIEW_DATA_NOTICE = f"""This concludes our interview. Thank you for your participation!
 
-Your data will be processed in accordance with our privacy policy and GDPR regulations.
+As you've consented, {company_name} will store your interview responses for evaluation purposes according to our privacy policy and GDPR regulations.
 
-If you have any questions about how your data is handled, please contact our data protection team.
+The interview session has now ended.
 """ 

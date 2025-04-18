@@ -37,6 +37,10 @@ def initialize_session_state():
         if st.session_state.get("chat_initialized", False):
             initial_prompt = st.session_state.chat_controller.get_initial_prompt()
             st.session_state.messages.append({"role": "assistant", "content": initial_prompt})
+    
+    # Initialize typing state
+    if "can_type" not in st.session_state:
+        st.session_state.can_type = True
 
 def main():
     st.title("Technical Interview Chatbot")
@@ -77,20 +81,39 @@ def main():
                 message(msg["content"], is_user=msg["role"] == "user", key=f"msg_{i}")
         
         # User input area
-        user_input = st.chat_input("Type your response here...")
-        
-        if user_input:
-            # Add user message to chat
-            st.session_state.messages.append({"role": "user", "content": user_input})
+        if st.session_state.get("can_type", True):
+            user_input = st.chat_input("Type your response here...")
             
-            with st.spinner("Processing..."):
-                # Get response from chatbot
-                response = st.session_state.chat_controller.process_user_input(user_input)
+            if user_input:
+                # Add user message to chat
+                st.session_state.messages.append({"role": "user", "content": user_input})
                 
-                # Add assistant response to chat
-                st.session_state.messages.append({"role": "assistant", "content": response})
-            
-            st.rerun()
+                with st.spinner("Processing..."):
+                    # Get response from chatbot
+                    response = st.session_state.chat_controller.process_user_input(user_input)
+                    
+                    # Add assistant response to chat
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                
+                # Check if interview is complete to display candidate info
+                if st.session_state.chat_controller.is_interview_complete():
+                    st.success("Interview completed!")
+                    
+                    # Display candidate information
+                    candidate_info = st.session_state.chat_controller.get_candidate_info()
+                    if candidate_info:
+                        with st.expander("Candidate Information", expanded=True):
+                            st.write("### Candidate Profile")
+                            for key, value in candidate_info.items():
+                                st.write(f"**{key.capitalize()}:** {value}")
+                
+                # Disable input if the interview is finished
+                st.session_state.can_type = st.session_state.chat_controller.can_continue_typing()
+                
+                st.rerun()
+        else:
+            # Display a disabled input field
+            st.text_input("Interview completed", "You can no longer type in this interview", disabled=True)
     
     with col2:
         # Controls and information section
@@ -119,15 +142,6 @@ def main():
         elif current_step == "complete":
             st.progress(1.0)
             st.success("Interview completed!")
-        
-        # Display collected information
-        with st.expander("Candidate Information", expanded=True):
-            candidate_info = interview_state["candidate_info"]
-            if candidate_info:
-                for key, value in candidate_info.items():
-                    st.write(f"**{key.capitalize()}:** {value}")
-            else:
-                st.write("No information collected yet.")
         
         # Show detected technologies
         if interview_state["tech_stack"]:

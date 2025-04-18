@@ -71,6 +71,11 @@ I'll be conducting a technical interview to assess your qualifications for a dev
         Returns:
             Response message
         """
+        # Check for exit command
+        if user_input.strip().lower() == "exit":
+            self.state_manager.mark_interview_finished()
+            return "Thank you for participating in the interview. The session has been ended."
+            
         if not user_input.strip():
             return "I didn't receive your response. Could you please provide an answer to the question?"
         
@@ -317,6 +322,9 @@ I'll be conducting a technical interview to assess your qualifications for a dev
                 if not conclusion_message or len(conclusion_message.strip()) == 0:
                     conclusion_message = self.prompt_templates.CONCLUSION_MESSAGE
             
+            # Mark interview as completely finished - cannot type anymore
+            self.state_manager.mark_interview_finished()
+            
             return conclusion_message
         
         # Fallback
@@ -494,3 +502,11 @@ I'll be conducting a technical interview to assess your qualifications for a dev
         self.consent_requested = False
         self.consent_given = False
         self.gdpr_intro_shown = False
+    
+    def can_continue_typing(self) -> bool:
+        """Check if the user can continue typing in the chat.
+        
+        Returns:
+            False if interview is finished or marked as complete with exit command, True otherwise
+        """
+        return not self.state_manager.is_interview_finished()
