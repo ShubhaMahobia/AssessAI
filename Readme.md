@@ -80,3 +80,27 @@ For generating unique identifiers for candidate records.
 For input validation of email addresses and phone numbers.
 Standard Python Libraries: Including datetime, typing, os, and json.
 
+# Prompt Design
+
+### 1. System Prompts
+This is a system prompt which will help the ai to understand their role how react.
+
+### 2. Information Gathering
+This prompt will help to gather the requirement of the user
+
+### 3. Technical Question Generation
+This prompt will help to generate question based on the tech skills provided by the user
+
+### 4. Response Handling
+This Ensures followup questions acknowledge previous answers
+## Challenges and Solutions
+
+The main Challenges which I faced while developing the application
+1. I created different different function individaully by making an integrated flow is quite difficult
+
+2. Also I tried different different models - from gemini and chose the best one
+
+
+Thank you 
+Shubham Mahobia
+mahobiashubham4@gmail.com
